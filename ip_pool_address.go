@@ -21,7 +21,6 @@ package gopowerstore
 import (
 	"context"
 	"errors"
-	"fmt"
 )
 
 const apiPoolAddressURL = "ip_pool_address"
@@ -32,7 +31,7 @@ func (c *ClientIMPL) GetStorageISCSITargetAddresses(
 	var ipPoolAddress IPPoolAddress
 	client := c.APIClient()
 	qp := client.QueryParamsWithFields(&ipPoolAddress)
-	qp.RawArg("purposes", fmt.Sprintf("eq.{%s}", IPPurposeTypeEnumStorageIscsiTarget))
+	// qp.RawArg("purposes", fmt.Sprintf("eq.{%s}", IPPurposeTypeEnumStorageIscsiTarget))
 	qp.Order("id")
 	_, err = client.Query(
 		ctx,
@@ -45,8 +44,18 @@ func (c *ClientIMPL) GetStorageISCSITargetAddresses(
 	if err != nil {
 		return resp, err
 	}
-	if len(resp) == 0 {
+
+	var ret []IPPoolAddress
+	for _, address := range resp {
+		for _, purpose := range address.Purposes {
+			if purpose == IPPurposeTypeEnumStorageIscsiTarget {
+				ret = append(ret, address)
+			}
+		}
+	}
+
+	if len(ret) == 0 {
 		return resp, errors.New("can't get iscsi target address")
 	}
-	return resp, nil
+	return ret, nil
 }
